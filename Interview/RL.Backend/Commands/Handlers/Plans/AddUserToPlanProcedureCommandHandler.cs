@@ -7,16 +7,16 @@ using RL.Data.DataModels;
 
 namespace RL.Backend.Commands.Handlers.Plans;
 
-public class AddProcedureToPlanCommandHandler : IRequestHandler<AddProcedureToPlanCommand, ApiResponse<Unit>>
+public class AddUserToPlanProcedureCommandHandler : IRequestHandler<AddUserToPlanProcedureCommand, ApiResponse<Unit>>
 {
     private readonly RLContext _context;
 
-    public AddProcedureToPlanCommandHandler(RLContext context)
+    public AddUserToPlanProcedureCommandHandler(RLContext context)
     {
         _context = context;
     }
 
-    public async Task<ApiResponse<Unit>> Handle(AddProcedureToPlanCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(AddUserToPlanProcedureCommand request, CancellationToken cancellationToken)
     {
         try
         {
@@ -35,16 +35,34 @@ public class AddProcedureToPlanCommandHandler : IRequestHandler<AddProcedureToPl
                 return ApiResponse<Unit>.Fail(new NotFoundException($"PlanId: {request.PlanId} not found"));
             if (procedure is null)
                 return ApiResponse<Unit>.Fail(new NotFoundException($"ProcedureId: {request.ProcedureId} not found"));
-
-            //Already has the procedure, so just succeed
             if (plan.PlanProcedures.Any(p => p.ProcedureId == procedure.ProcedureId))
-                return ApiResponse<Unit>.Succeed(new Unit());
-
-            plan.PlanProcedures.Add(new PlanProcedure
             {
-                ProcedureId = procedure.ProcedureId,
-                Assignments = new List<Assignment>()
-            });
+                var planProcedure = plan.PlanProcedures.FirstOrDefault(p => p.ProcedureId == procedure.ProcedureId);
+                List<Assignment> assignments = new List<Assignment>();
+                var existingAssignments = _context.Assignments
+                    .Where(a => a.PlanId == plan.PlanId && a.ProcedureId == procedure.ProcedureId)
+                    .ToList();
+
+                if (existingAssignments.Any())
+                {
+                    _context.Assignments.RemoveRange(existingAssignments);
+                    planProcedure.Assignments = null;
+                }
+                if (request.UserId.Count > 0)
+                {
+                    foreach (var item in request.UserId)
+                    {
+                        assignments.Add(new Assignment
+                        {
+                            PlanId = plan.PlanId,
+                            ProcedureId = procedure.ProcedureId,
+                            UserId = item
+                        });
+                    }
+                }
+                planProcedure.Assignments = assignments;
+            }
+
             Console.WriteLine($"Added procedure to plan : {plan.PlanId}");
             Console.WriteLine($"Added procedure : {procedure.ProcedureId}");
             await _context.SaveChangesAsync();

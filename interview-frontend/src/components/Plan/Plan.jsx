@@ -46,6 +46,7 @@ const Plan = () => {
             procedureId: procedure.procedureId,
             procedureTitle: procedure.procedureTitle,
           },
+          assignments:[],
         },
       ];
     });
@@ -82,8 +83,10 @@ const Plan = () => {
                       {planProcedures.map((p) => (
                         <PlanProcedureItem
                           key={p.procedure.procedureId}
+                          planId = {p.planId}
                           procedure={p.procedure}
                           users={users}
+                          assignedUsers = {p.assignments}
                         />
                       ))}
                     </div>

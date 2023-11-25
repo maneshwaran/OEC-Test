@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.EntityFrameworkCore;
 using RL.Data;
 using RL.Data.DataModels;
 
